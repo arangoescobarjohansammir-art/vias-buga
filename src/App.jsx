@@ -1,15 +1,12 @@
 import "./App.css";
+import Encabezado from "./components/Encabezado.jsx";
 
 function App() {
   return (
     <>
       <section id="center">
         <div>
-          <h1>VíasBuga</h1>
-          <p>
-            Este sitio web servirá para hacer reportes sobre daños en
-            insfraestructura en buga
-          </p>
+          <Encabezado titulo="VíasBuga" />
         </div>
       </section>
     </>
