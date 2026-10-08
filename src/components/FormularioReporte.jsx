@@ -1,21 +1,30 @@
 import { useState } from "react";
 
-function FormularioReporte() {
-  const [Tipo, setTipo] = useState("selecciona...");
-  const [Descripcion, setDescripcion] = useState("");
+function FormularioReporte({ onAgregar }) {
+  const [tipo, setTipo] = useState("");
+  const [descripcion, setDescripcion] = useState("");
 
   const manejarEnvio = (e) => {
     e.preventDefault();
-    console.log("Formulario enviado con éxito:");
-    console.log("Tipo de daño:", Tipo);
-    console.log("Descripción:", Descripcion);
+    onAgregar({
+      id: Date.now(),
+      tipo: tipo,
+      descripcion: descripcion,
+    });
+    setTipo("");
+    setDescripcion("");
   };
   return (
     <form onSubmit={manejarEnvio}>
-      <label htmlFor="Tipo">Elige el Tipo de daño: </label>
+      <label htmlFor="tipo">Elige el Tipo de daño: </label>
 
-      <select id="Tipo" value={Tipo} onChange={(e) => setTipo(e.target.value)}>
-        <option value="selecciona...">selecciona...</option>
+      <select
+        id="tipo"
+        value={tipo}
+        onChange={(e) => setTipo(e.target.value)}
+        required
+      >
+        <option value="">selecciona...</option>
         <option value="hueco">hueco</option>
         <option value="semáforo dañado">semáforo dañado</option>
         <option value="señalización">señalización</option>
@@ -23,12 +32,13 @@ function FormularioReporte() {
         <option value="sumidero">sumidero</option>
       </select>
 
-      <label htmlFor="Descripcion">Descripcion</label>
+      <label htmlFor="descripcion">Descripción</label>
 
       <textarea
-        id="Descripcion"
-        value={Descripcion}
+        id="descripcion"
+        value={descripcion}
         onChange={(e) => setDescripcion(e.target.value)}
+        required
       ></textarea>
       <button type="submit">Enviar Formulario</button>
     </form>
