@@ -2,6 +2,7 @@ import "./App.css";
 import Encabezado from "./components/Encabezado.jsx";
 import FormularioReporte from "./components/FormularioReporte.jsx";
 import { useState } from "react";
+import Mapa from "./components/Mapa.jsx";
 
 function App() {
   const [reportes, setReportes] = useState([]);
@@ -17,6 +18,9 @@ function App() {
         </div>
         <div>
           <FormularioReporte onAgregar={agregarReporte} />
+        </div>
+        <div style={{ width: "100%" }}>
+          <Mapa />
         </div>
         <ul>
           {reportes.map((reporte) => (
