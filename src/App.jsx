@@ -6,6 +6,8 @@ import Mapa from "./components/Mapa.jsx";
 
 function App() {
   const [reportes, setReportes] = useState([]);
+  const [ubicacion, setUbicacion] = useState(null);
+
   const agregarReporte = (nuevo) => {
     setReportes([...reportes, nuevo]);
   };
@@ -20,7 +22,12 @@ function App() {
           <FormularioReporte onAgregar={agregarReporte} />
         </div>
         <div style={{ width: "100%" }}>
-          <Mapa />
+          <Mapa ubicacion={ubicacion} onSeleccionar={setUbicacion} />
+          <p>
+            {ubicacion
+              ? `Ubicación elegida: ${ubicacion.lat.toFixed(5)}, ${ubicacion.lng.toFixed(5)}`
+              : "Toca el mapa para marcar el daño"}
+          </p>
         </div>
         <ul>
           {reportes.map((reporte) => (
