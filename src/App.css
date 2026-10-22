@@ -167,7 +167,7 @@
 
   &::before,
   &::after {
-    content: '';
+    content: "";
     position: absolute;
     top: -4.5px;
     border: 5px solid transparent;
@@ -181,4 +181,13 @@
     right: 0;
     border-right-color: var(--border);
   }
+}
+
+.pin-seleccion {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: orange;
+  border: 2px solid white;
+  box-sizing: border-box;
 }

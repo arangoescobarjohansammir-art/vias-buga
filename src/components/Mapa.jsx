@@ -5,6 +5,7 @@ import {
   useMapEvents,
   Popup,
 } from "react-leaflet";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 function SeleccionarUbicacion({ onSeleccionar }) {
@@ -34,9 +35,20 @@ function Mapa({ ubicacion, onSeleccionar, reportes }) {
         </Marker>
       ))}
       <SeleccionarUbicacion onSeleccionar={onSeleccionar} />
-      {ubicacion && <Marker position={[ubicacion.lat, ubicacion.lng]} />}
+      {ubicacion && (
+        <Marker
+          icon={iconoSeleccion}
+          position={[ubicacion.lat, ubicacion.lng]}
+        />
+      )}
     </MapContainer>
   );
 }
+
+const iconoSeleccion = L.divIcon({
+  className: "pin-seleccion",
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+});
 
 export default Mapa;
