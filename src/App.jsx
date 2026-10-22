@@ -19,7 +19,11 @@ function App() {
           <Encabezado titulo="VíasBuga" />
         </div>
         <div>
-          <FormularioReporte onAgregar={agregarReporte} />
+          <FormularioReporte
+            onAgregar={agregarReporte}
+            ubicacion={ubicacion}
+            onLimpiarUbicacion={() => setUbicacion(null)}
+          />
         </div>
         <div style={{ width: "100%" }}>
           <Mapa ubicacion={ubicacion} onSeleccionar={setUbicacion} />
@@ -32,7 +36,18 @@ function App() {
         <ul>
           {reportes.map((reporte) => (
             <li key={reporte.id}>
-              {reporte.tipo}: {reporte.descripcion}
+              <div>
+                <strong>Tipo:</strong> {reporte.tipo}
+              </div>
+              <div>
+                <strong>Descripción:</strong> {reporte.descripcion}
+              </div>
+              <div>
+                <strong>Latitud:</strong> {reporte.latitud.toFixed(5)}
+              </div>
+              <div>
+                <strong>Longitud:</strong> {reporte.longitud.toFixed(5)}
+              </div>
             </li>
           ))}
         </ul>

@@ -1,18 +1,25 @@
 import { useState } from "react";
 
-function FormularioReporte({ onAgregar }) {
+function FormularioReporte({ onAgregar, ubicacion, onLimpiarUbicacion }) {
   const [tipo, setTipo] = useState("");
   const [descripcion, setDescripcion] = useState("");
 
   const manejarEnvio = (e) => {
     e.preventDefault();
+    if (!ubicacion) {
+      window.alert("Primero marca la ubicación en el mapa");
+      return;
+    }
     onAgregar({
       id: Date.now(),
       tipo: tipo,
       descripcion: descripcion,
+      latitud: ubicacion.lat,
+      longitud: ubicacion.lng,
     });
     setTipo("");
     setDescripcion("");
+    onLimpiarUbicacion();
   };
   return (
     <form onSubmit={manejarEnvio}>
