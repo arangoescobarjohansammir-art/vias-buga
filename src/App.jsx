@@ -26,7 +26,11 @@ function App() {
           />
         </div>
         <div style={{ width: "100%" }}>
-          <Mapa ubicacion={ubicacion} onSeleccionar={setUbicacion} />
+          <Mapa
+            ubicacion={ubicacion}
+            onSeleccionar={setUbicacion}
+            reportes={reportes}
+          />
           <p>
             {ubicacion
               ? `Ubicación elegida: ${ubicacion.lat.toFixed(5)}, ${ubicacion.lng.toFixed(5)}`

@@ -1,4 +1,10 @@
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMapEvents,
+  Popup,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 function SeleccionarUbicacion({ onSeleccionar }) {
@@ -6,7 +12,7 @@ function SeleccionarUbicacion({ onSeleccionar }) {
   return null;
 }
 
-function Mapa({ ubicacion, onSeleccionar }) {
+function Mapa({ ubicacion, onSeleccionar, reportes }) {
   const centroBuga = [3.9008, -76.2978]; // [latitud, longitud]
 
   return (
@@ -19,6 +25,14 @@ function Mapa({ ubicacion, onSeleccionar }) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      {reportes.map((reporte) => (
+        <Marker key={reporte.id} position={[reporte.latitud, reporte.longitud]}>
+          <Popup>
+            <strong>Tipo:</strong> {reporte.tipo} <br />
+            <strong>Descripción:</strong> {reporte.descripcion}
+          </Popup>
+        </Marker>
+      ))}
       <SeleccionarUbicacion onSeleccionar={onSeleccionar} />
       {ubicacion && <Marker position={[ubicacion.lat, ubicacion.lng]} />}
     </MapContainer>
