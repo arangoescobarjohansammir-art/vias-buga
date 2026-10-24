@@ -33,9 +33,9 @@ function FormularioReporte({ onAgregar, ubicacion, onLimpiarUbicacion }) {
       >
         <option value="">selecciona...</option>
         <option value="hueco">hueco</option>
-        <option value="semáforo dañado">semáforo dañado</option>
-        <option value="señalización">señalización</option>
-        <option value="andén">andén</option>
+        <option value="semaforo_danado">semáforo dañado</option>
+        <option value="senalizacion">señalización</option>
+        <option value="anden">andén</option>
         <option value="sumidero">sumidero</option>
       </select>
 
