@@ -23,4 +23,29 @@ CREATE TABLE reportes (
     creado_en timestamptz NOT NULL DEFAULT now()
 );
 
+
+DROP POLICY IF EXISTS "Permitir lectura pública de reportes" ON reportes;
+DROP POLICY IF EXISTS "Permitir inserción a usuarios anónimos y autenticados" ON reportes;
+
+
+CREATE POLICY "Permitir lectura pública de reportes" 
+ON reportes 
+FOR SELECT 
+TO anon, authenticated 
+USING (true);
+
+
+CREATE POLICY "Permitir inserción a usuarios anónimos y autenticados" 
+ON reportes 
+FOR INSERT 
+TO anon, authenticated 
+WITH CHECK (
+
+    estado = 'recibido' 
+    AND 
+
+    creado_en = now()
+
+);
+
 ALTER TABLE reportes ENABLE ROW LEVEL SECURITY;
