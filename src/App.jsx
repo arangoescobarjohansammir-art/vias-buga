@@ -3,13 +3,38 @@ import Encabezado from "./components/Encabezado.jsx";
 import FormularioReporte from "./components/FormularioReporte.jsx";
 import { useState } from "react";
 import Mapa from "./components/Mapa.jsx";
+import { supabase } from "./supabaseClient.js";
 
 function App() {
   const [reportes, setReportes] = useState([]);
   const [ubicacion, setUbicacion] = useState(null);
 
-  const agregarReporte = (nuevo) => {
-    setReportes([...reportes, nuevo]);
+  const agregarReporte = async (nuevo) => {
+    try {
+      const { data, error } = await supabase
+        .from("reportes")
+        .insert([
+          {
+            tipo: nuevo.tipo,
+            descripcion: nuevo.descripcion,
+            latitud: nuevo.latitud,
+            longitud: nuevo.longitud,
+          },
+        ])
+        .select();
+
+      if (error) throw error;
+
+      const reporteCreado = data[0];
+
+      setReportes((anterior) => [...anterior, reporteCreado]);
+
+      return true;
+    } catch (error) {
+      console.error("Error al guardar en Supabase:", error.message);
+
+      return false;
+    }
   };
 
   return (
