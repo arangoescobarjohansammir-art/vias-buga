@@ -37,6 +37,14 @@ function App() {
     }
   };
 
+  const nombresTipo = {
+    hueco: "Hueco",
+    semaforo_danado: "Semáforo dañado",
+    senalizacion: "Señalización",
+    anden: "Andén",
+    sumidero: "Sumidero",
+  };
+
   return (
     <>
       <section id="center">
@@ -66,7 +74,7 @@ function App() {
           {reportes.map((reporte) => (
             <li key={reporte.id}>
               <div>
-                <strong>Tipo:</strong> {reporte.tipo}
+                <strong>Tipo:</strong> {nombresTipo[reporte.tipo]}
               </div>
               <div>
                 <strong>Descripción:</strong> {reporte.descripcion}
