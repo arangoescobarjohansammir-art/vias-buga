@@ -1,10 +1,31 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>vias-buga</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta
+      name="description"
+      content="VíasBuga: reporta huecos, semáforos, señalización, andenes y sumideros en Guadalajara de Buga y sigue cada reporte hasta que se repare."
+    />
+    <meta name="theme-color" content="#0f1417" />
+    <title>VíasBuga</title>
+    <!-- Aplica el tema guardado (o el del sistema) ANTES de pintar, para evitar el parpadeo claro/oscuro. -->
+    <script>
+      (function () {
+        try {
+          var guardado = localStorage.getItem("viasbuga-tema");
+          var oscuro =
+            guardado === "oscuro" ||
+            (guardado !== "claro" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (oscuro) document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
