@@ -44,7 +44,7 @@ function Inicio() {
       </div>
 
       <div className="relative z-0 h-[42dvh] min-h-64 md:col-start-2 md:row-span-2 md:row-start-1 md:h-auto">
-        <MapaEstados reportes={visibles} seleccionado={seleccionado} onSeleccionar={setSeleccionado} />
+        <MapaEstados reportes={visibles} seleccionado={seleccionado} onSeleccionar={setSeleccionado} conUbicacion />
       </div>
 
       <section

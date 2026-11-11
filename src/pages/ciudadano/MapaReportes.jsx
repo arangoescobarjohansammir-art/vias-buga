@@ -180,14 +180,14 @@ function MapaReportes() {
         <ErrorCarga className="mt-4" error={error} onReintentar={recargar} />
       ) : cargando && !datos ? (
         <Cargando texto="Cargando reportes" />
-      ) : visibles.length === 0 ? (
+      ) : visibles.length === 0 && vista === "lista" ? (
         <p className="mt-4 rounded-2xl border border-dashed border-borde-fuerte p-8 text-center text-sm text-texto-2">
           {reportes.length ? "No encontramos reportes con esos filtros." : "Aún no hay reportes en el mapa."}
         </p>
       ) : vista === "mapa" ? (
         <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_22rem]">
           <div className="relative h-[55dvh] min-h-80 overflow-hidden rounded-2xl border border-borde lg:h-[34rem]">
-            <MapaEstados reportes={visibles} seleccionado={seleccionado} onSeleccionar={setSeleccionado} />
+            <MapaEstados reportes={visibles} seleccionado={seleccionado} onSeleccionar={setSeleccionado} conUbicacion />
             <Leyenda />
           </div>
           <div className="flex flex-col gap-3">
