@@ -7,20 +7,17 @@ import InsigniaEstado from "../../components/ui/InsigniaEstado.jsx";
 import Modal from "../../components/ui/Modal.jsx";
 import Mapa from "../../components/Mapa.jsx"; // el mapa que ya tenías: no se modificó
 import { boton, campo } from "../../components/ui/estilos.js";
-import {
-  TIPOS,
-  dentroDeBuga,
-  distanciaMetros,
-  formatearCoordenadas,
-} from "../../data/catalogos.js";
-import { REPORTES } from "../../data/ejemplo.js";
+import { TIPOS, dentroDeBuga, formatearCoordenadas } from "../../data/catalogos.js";
+import { useAuth } from "../../contexto/auth.js";
+import { MAX_FOTO_ORIGINAL_BYTES, TIPOS_FOTO, subirFoto } from "../../servicios/fotos.js";
+import { apoyarReporte, crearReporte, reportesCercanos } from "../../servicios/reportes.js";
+import { mensajeError } from "../../servicios/errores.js";
 
 const RADIO_DUPLICADO_M = 25; // el mismo radio de la función reportes_cercanos()
-const MAX_FOTO_BYTES = 5 * 1024 * 1024; // el mismo límite del bucket fotos-reportes
-const TIPOS_FOTO = ["image/jpeg", "image/png", "image/webp"];
 
 function NuevoReporte() {
   const navegar = useNavigate();
+  const { asegurarSesion } = useAuth();
 
   const [tipo, setTipo] = useState("");
   const [ubicacion, setUbicacion] = useState(null);
@@ -29,6 +26,7 @@ function NuevoReporte() {
   const [error, setError] = useState("");
   const [buscandoGps, setBuscandoGps] = useState(false);
   const [duplicado, setDuplicado] = useState(null);
+  const [enviando, setEnviando] = useState(false);
 
   // Libera la vista previa de la foto cuando cambia o se sale de la pantalla.
   useEffect(() => {
@@ -43,8 +41,8 @@ function NuevoReporte() {
     if (!archivo) return;
     if (!TIPOS_FOTO.includes(archivo.type)) {
       setError("La foto debe ser JPG, PNG o WebP.");
-    } else if (archivo.size > MAX_FOTO_BYTES) {
-      setError("La foto pesa más de 5 MB. Elige una más liviana.");
+    } else if (archivo.size > MAX_FOTO_ORIGINAL_BYTES) {
+      setError("La foto pesa más de 25 MB. Elige una más liviana.");
     } else {
       setError("");
       setFoto({ archivo, url: URL.createObjectURL(archivo) });
@@ -72,29 +70,64 @@ function NuevoReporte() {
     );
   };
 
-  const terminar = () => {
-    // Más adelante: insertar en Supabase y subir la foto a Storage.
-    const ref = crypto.randomUUID().slice(0, 6);
-    navegar("/app/reportar/enviado", { state: { ref, tipo } });
+  // Crea el reporte en Supabase, sube la foto y pasa a la pantalla de confirmación.
+  const terminar = async () => {
+    setEnviando(true);
+    setError("");
+    try {
+      await asegurarSesion();
+      const id = await crearReporte({ tipo, descripcion, lat: ubicacion.lat, lng: ubicacion.lng });
+      let fotoFallo = false;
+      if (foto) {
+        try {
+          await subirFoto(id, foto.archivo, "antes");
+        } catch {
+          fotoFallo = true; // el reporte ya quedó guardado; solo falló la foto
+        }
+      }
+      navegar("/app/reportar/enviado", { state: { id, tipo, fotoFallo }, replace: true });
+    } catch (e) {
+      setDuplicado(null);
+      setError(mensajeError(e, "No pudimos enviar tu reporte. Inténtalo de nuevo."));
+      setEnviando(false);
+    }
   };
 
-  const enviar = (e) => {
+  const apoyarExistente = async () => {
+    setEnviando(true);
+    try {
+      await asegurarSesion();
+      await apoyarReporte(duplicado.ref);
+      navegar(`/app/reporte/${duplicado.ref}`);
+    } catch (e) {
+      setDuplicado(null);
+      setError(mensajeError(e, "No pudimos registrar tu apoyo. Inténtalo de nuevo."));
+      setEnviando(false);
+    }
+  };
+
+  const enviar = async (e) => {
     e.preventDefault();
+    if (enviando) return;
     if (!tipo) return setError("Elige el tipo de daño.");
     if (!ubicacion) return setError("Toca el mapa para marcar dónde está el daño.");
     if (!dentroDeBuga(ubicacion)) return setError("Esa ubicación queda fuera de Guadalajara de Buga.");
     if (descripcion.trim().length === 0) return setError("Cuéntanos un poco más sobre el daño.");
     setError("");
+    setEnviando(true);
 
-    // Aviso de duplicados (más adelante lo hará la función reportes_cercanos de la base).
-    const cercano = REPORTES.find(
-      (r) =>
-        r.tipo === tipo &&
-        r.estado !== "resuelto" &&
-        distanciaMetros(ubicacion, r) <= RADIO_DUPLICADO_M,
-    );
-    if (cercano) setDuplicado(cercano);
-    else terminar();
+    // Aviso de duplicados: la base de datos busca reportes del mismo tipo a menos de 25 m.
+    try {
+      const cercanos = await reportesCercanos({ lat: ubicacion.lat, lng: ubicacion.lng, tipo, metros: RADIO_DUPLICADO_M });
+      if (cercanos.length > 0) {
+        setDuplicado(cercanos[0]);
+        setEnviando(false);
+        return;
+      }
+    } catch {
+      // Si la comprobación falla, no bloqueamos el reporte.
+    }
+    await terminar();
   };
 
   return (
@@ -184,7 +217,7 @@ function NuevoReporte() {
                 />
               </label>
             )}
-            <p className="mt-2 text-xs text-texto-3">Máximo 5 MB. JPG, PNG o WebP.</p>
+            <p className="mt-2 text-xs text-texto-3">JPG, PNG o WebP. La foto se optimiza sola antes de subirla.</p>
             <p className="mt-2 flex items-start gap-2 text-xs leading-snug text-texto-3">
               <ShieldCheck className="mt-px size-4 shrink-0" aria-hidden="true" />
               Al subir la foto, asegúrate de no registrar rostros ni placas de vehículos. Tus datos
@@ -212,8 +245,8 @@ function NuevoReporte() {
             <p role="alert" className={`mb-3 text-sm font-semibold text-peligro ${error ? "" : "hidden"}`}>
               {error}
             </p>
-            <button type="submit" className={`${boton.primario} h-14 w-full text-base`}>
-              Enviar reporte
+            <button type="submit" disabled={enviando} className={`${boton.primario} h-14 w-full text-base`}>
+              {enviando ? "Enviando..." : "Enviar reporte"}
             </button>
           </div>
         </div>
@@ -238,23 +271,19 @@ function NuevoReporte() {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-bold">
-                  {TIPOS[duplicado.tipo].etiqueta} · Barrio {duplicado.barrio}
+                  {TIPOS[duplicado.tipo].etiqueta} · a {duplicado.distancia} m de ti
                 </p>
                 <p className="text-sm text-texto-2">
-                  Ref. {duplicado.ref} · {duplicado.apoyos} apoyos
+                  Ref. {duplicado.refCorta} · {duplicado.apoyos} apoyos
                 </p>
               </div>
               <InsigniaEstado estado={duplicado.estado} />
             </div>
             <div className="mt-5 flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={() => navegar(`/app/reporte/${duplicado.ref}`)}
-                className={boton.primario}
-              >
+              <button type="button" onClick={apoyarExistente} disabled={enviando} className={boton.primario}>
                 Apoyar reporte existente
               </button>
-              <button type="button" onClick={terminar} className={boton.secundario}>
+              <button type="button" onClick={terminar} disabled={enviando} className={boton.secundario}>
                 Es otro daño, continuar
               </button>
             </div>

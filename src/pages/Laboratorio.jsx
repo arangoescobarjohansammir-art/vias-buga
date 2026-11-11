@@ -1,10 +1,19 @@
+import { useEffect } from "react";
 import { Link } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import App from "../App.jsx"; // tu pantalla original, sin modificar
+import { useAuth } from "../contexto/auth.js";
 
 // Envuelve tu App.jsx original (formulario + mapa conectados a Supabase) con un estilo
 // básico, para seguir probando la base de datos mientras construimos las pantallas finales.
 function Laboratorio() {
+  const { asegurarSesion } = useAuth();
+
+  // Ahora crear reportes exige sesión: se abre una sesión anónima para poder probar.
+  useEffect(() => {
+    asegurarSesion().catch(() => {});
+  }, [asegurarSesion]);
+
   return (
     <div className="laboratorio mx-auto max-w-2xl px-4 py-8 text-texto">
       <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-texto-2 hover:text-texto">

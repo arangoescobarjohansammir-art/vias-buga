@@ -1,11 +1,18 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown, Download } from "lucide-react";
-import AvisoEjemplo from "../../components/ui/AvisoEjemplo.jsx";
+import Cargando from "../../components/ui/Cargando.jsx";
+import ErrorCarga from "../../components/ui/ErrorCarga.jsx";
 import InsigniaEstado from "../../components/ui/InsigniaEstado.jsx";
 import { boton, campo, tarjeta } from "../../components/ui/estilos.js";
-import { ESTADOS, TIPOS, formatearCoordenadas } from "../../data/catalogos.js";
-import { COMUNAS, INDICADORES, PERIODOS, REPORTES } from "../../data/ejemplo.js";
+import { ESTADOS, ORDEN_ESTADOS, PERIODOS, TIPOS, formatearCoordenadas } from "../../data/catalogos.js";
 import { descargarCsv } from "../../data/exportarCsv.js";
+import { useConsulta } from "../../hooks/useConsulta.js";
+import {
+  etiquetaUbicacion,
+  indicadoresResumen,
+  listarReportes,
+  listarZonas,
+} from "../../servicios/reportes.js";
 
 function Selector({ etiqueta, valor, onCambio, children }) {
   return (
@@ -31,21 +38,66 @@ function Indicador({ titulo, valor, detalle, color }) {
   );
 }
 
+// Convierte las filas (tipo, estado, total, días promedio) en los números del panel.
+function resumir(filas) {
+  const total = filas.reduce((suma, f) => suma + Number(f.total), 0);
+  const resueltos = filas.filter((f) => f.estado === "resuelto").reduce((suma, f) => suma + Number(f.total), 0);
+
+  // Promedio ponderado: cada fila pesa por cuántos reportes resueltos agrupa.
+  const conDias = filas.filter((f) => f.estado === "resuelto" && f.dias_promedio_resolucion !== null);
+  const pesoDias = conDias.reduce((suma, f) => suma + Number(f.total), 0);
+  const diasPromedio = pesoDias
+    ? (conDias.reduce((suma, f) => suma + Number(f.dias_promedio_resolucion) * Number(f.total), 0) / pesoDias).toFixed(1)
+    : null;
+
+  const porTipo = Object.keys(TIPOS)
+    .map((tipo) => ({
+      tipo,
+      total: filas.filter((f) => f.tipo === tipo).reduce((suma, f) => suma + Number(f.total), 0),
+    }))
+    .sort((a, b) => b.total - a.total);
+  const porEstado = ORDEN_ESTADOS.map((estado) => ({
+    estado,
+    total: filas.filter((f) => f.estado === estado).reduce((suma, f) => suma + Number(f.total), 0),
+  }));
+
+  return { total, resueltos, pendientes: total - resueltos, diasPromedio, porTipo, porEstado };
+}
+
 function Indicadores() {
-  const [comuna, setComuna] = useState("todas");
-  const [periodo, setPeriodo] = useState(PERIODOS[1]);
+  const [zonaId, setZonaId] = useState("todas");
+  const [periodoId, setPeriodoId] = useState("90d");
   const [menuAbierto, setMenuAbierto] = useState(false);
 
-  const { total, resueltos, pendientes, diasPromedio, porTipo, porEstado } = INDICADORES;
-  const maximo = Math.max(...porTipo.map((t) => t.total));
-  const recientes = REPORTES.filter((r) => comuna === "todas" || r.comuna === comuna);
+  const periodo = PERIODOS.find((p) => p.id === periodoId);
+  const { datos: zonasDatos } = useConsulta(() => listarZonas().catch(() => []), ["zonas"]);
+  const zonas = zonasDatos ?? [];
+
+  const { datos, error, cargando, recargar } = useConsulta(async () => {
+    const desde = periodo.desde();
+    const [filas, reportes] = await Promise.all([
+      indicadoresResumen({ desde, zonaId: zonaId === "todas" ? null : Number(zonaId) }),
+      listarReportes({ limite: 1000, desde }),
+    ]);
+    return { filas, reportes };
+  }, [periodoId, zonaId]);
+
+  const resumen = useMemo(() => resumir(datos?.filas ?? []), [datos]);
+  const { total, resueltos, pendientes, diasPromedio, porTipo, porEstado } = resumen;
+  const maximo = Math.max(1, ...porTipo.map((t) => t.total));
+
+  // La lista y el CSV usan los mismos filtros que las cifras.
+  const filtrados = useMemo(
+    () => (datos?.reportes ?? []).filter((r) => zonaId === "todas" || String(r.zonaId) === zonaId),
+    [datos, zonaId],
+  );
+  const recientes = filtrados.slice(0, 10);
 
   return (
     <div>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <AvisoEjemplo />
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">Indicadores de mantenimiento</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Indicadores de mantenimiento</h1>
           <p className="mt-1.5 text-[15px] text-texto-2">Qué se reporta, qué se está atendiendo y qué ya se resolvió.</p>
         </div>
 
@@ -66,45 +118,60 @@ function Indicadores() {
                 <button
                   type="button"
                   onClick={() => {
-                    descargarCsv(recientes);
+                    descargarCsv(filtrados);
                     setMenuAbierto(false);
                   }}
                   className="w-full cursor-pointer px-4 py-2.5 text-left text-sm font-semibold hover:bg-superficie-3"
                 >
-                  CSV (.csv)
+                  CSV (abre en Excel)
                 </button>
               </li>
-              {["Excel (.xlsx)", "PDF"].map((formato) => (
-                <li key={formato}>
-                  <button type="button" disabled className="w-full px-4 py-2.5 text-left text-sm text-texto-3">
-                    {formato} <span className="text-xs">· próximamente</span>
-                  </button>
-                </li>
-              ))}
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuAbierto(false);
+                    window.print();
+                  }}
+                  className="w-full cursor-pointer px-4 py-2.5 text-left text-sm font-semibold hover:bg-superficie-3"
+                >
+                  PDF (imprimir)
+                </button>
+              </li>
             </ul>
           )}
         </div>
       </div>
 
       <section aria-label="Filtros" className={`${tarjeta} mt-6 grid gap-4 p-4 sm:grid-cols-2 sm:p-5`}>
-        <Selector etiqueta="Comuna / Corregimiento" valor={comuna} onCambio={setComuna}>
+        <Selector etiqueta="Comuna / Corregimiento" valor={zonaId} onCambio={setZonaId}>
           <option value="todas">Todas</option>
-          {COMUNAS.map((c) => (
-            <option key={c}>{c}</option>
+          {zonas.map((z) => (
+            <option key={z.id} value={z.id}>
+              {z.nombre}
+            </option>
           ))}
         </Selector>
-        <Selector etiqueta="Período" valor={periodo} onCambio={setPeriodo}>
+        <Selector etiqueta="Período" valor={periodoId} onCambio={setPeriodoId}>
           {PERIODOS.map((p) => (
-            <option key={p}>{p}</option>
+            <option key={p.id} value={p.id}>
+              {p.etiqueta}
+            </option>
           ))}
         </Selector>
       </section>
 
+      {error ? (
+        <ErrorCarga className="mt-6" error={error} onReintentar={recargar} />
+      ) : cargando && !datos ? (
+        <Cargando texto="Cargando indicadores" />
+      ) : (
+        <>
       <section aria-label="Resumen" className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Indicador titulo="Reportes totales" valor={total} detalle="en el período seleccionado" />
-        <Indicador titulo="Resueltos" valor={resueltos} color="text-exito" detalle={`${Math.round((resueltos / total) * 100)} % del total`} />
+        <Indicador titulo="Resueltos" valor={resueltos} color="text-exito" detalle={`${total ? Math.round((resueltos / total) * 100) : 0} % del total`} />
         <Indicador titulo="Pendientes" valor={pendientes} detalle="entre recibidos, en revisión y en reparación" />
-        <Indicador titulo="Tiempo promedio de resolución" valor={`${diasPromedio} días`} detalle="desde que se recibe el reporte" />
+        <Indicador titulo="Tiempo promedio de resolución" valor={diasPromedio ? `${diasPromedio} días` : "—"} detalle={diasPromedio ? "desde que se recibe el reporte" : "aún no hay reportes resueltos"} />
       </section>
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -132,7 +199,7 @@ function Indicadores() {
             {porEstado.map(({ estado, total: cantidad }) => (
               <span
                 key={estado}
-                style={{ width: `${(cantidad / total) * 100}%`, background: `var(--est-${estado}-dot)` }}
+                style={{ width: `${total ? (cantidad / total) * 100 : 0}%`, background: `var(--est-${estado}-dot)` }}
               />
             ))}
           </div>
@@ -167,10 +234,10 @@ function Indicadores() {
             <tbody>
               {recientes.map((r) => (
                 <tr key={r.ref} className="border-b border-borde/60 last:border-0">
-                  <td className="py-3.5 pr-4 font-bold">Ref. {r.ref}</td>
+                  <td className="py-3.5 pr-4 font-bold">Ref. {r.refCorta}</td>
                   <td className="py-3.5 pr-4">{TIPOS[r.tipo].etiqueta}</td>
                   <td className="py-3.5 pr-4 text-texto-2">
-                    Barrio {r.barrio} · {formatearCoordenadas(r.lat, r.lng)}
+                    {etiquetaUbicacion(r)} · {formatearCoordenadas(r.lat, r.lng)}
                   </td>
                   <td className="py-3.5 pr-4">
                     <InsigniaEstado estado={r.estado} />
@@ -189,18 +256,20 @@ function Indicadores() {
             <li key={r.ref} className="rounded-xl border border-borde bg-superficie-2 p-3.5">
               <div className="flex items-center justify-between gap-3">
                 <p className="font-bold">
-                  {TIPOS[r.tipo].etiqueta} · Barrio {r.barrio}
+                  {TIPOS[r.tipo].etiqueta} · {etiquetaUbicacion(r)}
                 </p>
                 <InsigniaEstado estado={r.estado} />
               </div>
               <p className="mt-1 text-xs text-texto-2">
-                Ref. {r.ref} · {r.fecha} · {r.cuadrilla ?? "Sin asignar"}
+                Ref. {r.refCorta} · {r.fecha} · {r.cuadrilla ?? "Sin asignar"}
               </p>
             </li>
           ))}
         </ul>
-        {recientes.length === 0 && <p className="mt-4 text-sm text-texto-2">No hay reportes en esa comuna.</p>}
+        {recientes.length === 0 && <p className="mt-4 text-sm text-texto-2">No hay reportes en este período.</p>}
       </section>
+        </>
+      )}
     </div>
   );
 }

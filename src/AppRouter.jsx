@@ -2,12 +2,16 @@ import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import LayoutCiudadano from "./components/layout/LayoutCiudadano.jsx";
 import LayoutAdmin from "./components/layout/LayoutAdmin.jsx";
+import RutaAdmin from "./components/RutaAdmin.jsx";
+import Cargando from "./components/ui/Cargando.jsx";
+import AuthProvider from "./contexto/AuthProvider.jsx";
 
 // Cada pantalla se descarga solo cuando se visita (carga inicial rápida).
 // Leaflet, por ejemplo, no se baja hasta que abres una pantalla con mapa.
 const Bienvenida = lazy(() => import("./pages/Bienvenida.jsx"));
 const Registro = lazy(() => import("./pages/Registro.jsx"));
 const Login = lazy(() => import("./pages/Login.jsx"));
+const Restablecer = lazy(() => import("./pages/Restablecer.jsx"));
 const NoEncontrada = lazy(() => import("./pages/NoEncontrada.jsx"));
 
 const Inicio = lazy(() => import("./pages/ciudadano/Inicio.jsx"));
@@ -26,14 +30,6 @@ const AccesoRestringido = lazy(() => import("./pages/admin/AccesoRestringido.jsx
 // Tu pantalla original (formulario + mapa conectados a Supabase), sin tocar.
 const Laboratorio = lazy(() => import("./pages/Laboratorio.jsx"));
 
-function Cargando() {
-  return (
-    <div className="flex min-h-dvh items-center justify-center bg-fondo" role="status" aria-label="Cargando">
-      <span className="size-9 animate-spin rounded-full border-4 border-borde border-t-primario" />
-    </div>
-  );
-}
-
 // Al cambiar de pantalla, vuelve arriba.
 function VolverArriba() {
   const { pathname } = useLocation();
@@ -46,12 +42,14 @@ function VolverArriba() {
 function AppRouter() {
   return (
     <BrowserRouter>
+      <AuthProvider>
       <VolverArriba />
-      <Suspense fallback={<Cargando />}>
+      <Suspense fallback={<Cargando pantalla />}>
         <Routes>
           <Route path="/" element={<Bienvenida />} />
           <Route path="/registro" element={<Registro />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/restablecer" element={<Restablecer />} />
 
           {/* Ciudadano: con barra inferior en celular */}
           <Route path="/app" element={<LayoutCiudadano conPestanas />}>
@@ -68,18 +66,21 @@ function AppRouter() {
             <Route path="reporte/:ref" element={<DetalleReporte />} />
           </Route>
 
-          {/* Indicadores públicos y administración */}
+          {/* Indicadores públicos y administración (solo con rol de administrador) */}
           <Route element={<LayoutAdmin />}>
             <Route path="/indicadores" element={<Indicadores />} />
-            <Route path="/admin" element={<GestionReportes />} />
-            <Route path="/admin/reporte/:ref" element={<DetalleAdmin />} />
             <Route path="/acceso-restringido" element={<AccesoRestringido />} />
+            <Route element={<RutaAdmin />}>
+              <Route path="/admin" element={<GestionReportes />} />
+              <Route path="/admin/reporte/:ref" element={<DetalleAdmin />} />
+            </Route>
           </Route>
 
           <Route path="/laboratorio" element={<Laboratorio />} />
           <Route path="*" element={<NoEncontrada />} />
         </Routes>
       </Suspense>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

@@ -9,7 +9,10 @@ function LineaTiempo({ estadoActual, historial }) {
   return (
     <ol className="relative">
       {ORDEN_ESTADOS.map((estado, indice) => {
-        const registro = historial.find((h) => h.estado === estado);
+        // Fecha del cambio a este estado + la nota más reciente que se escribió en él.
+        const transicion = historial.findLast((h) => h.estado === estado && !h.esNota);
+        const ultimoRegistro = historial.findLast((h) => h.estado === estado);
+        const registro = transicion ?? ultimoRegistro;
         const orden = ESTADOS[estado].orden;
         const hecho = orden < ordenActual || (estado === "resuelto" && estadoActual === "resuelto");
         const actual = estado === estadoActual && estado !== "resuelto";
@@ -47,7 +50,7 @@ function LineaTiempo({ estadoActual, historial }) {
                 )}
               </p>
               <p className="text-sm text-texto-2">
-                {registro ? `${registro.fecha} · ${registro.nota}` : "Pendiente"}
+                {registro ? `${registro.fecha} · ${ultimoRegistro.nota}` : "Pendiente"}
               </p>
             </div>
           </li>

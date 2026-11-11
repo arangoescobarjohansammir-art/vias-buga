@@ -1,8 +1,11 @@
-import { NavLink, Link, Outlet } from "react-router";
+import { NavLink, Link, Outlet, useLocation } from "react-router";
 import { FileText, MapPin, Plus, User } from "lucide-react";
 import Logo from "../ui/Logo.jsx";
 import BotonTema from "../ui/BotonTema.jsx";
 import { boton } from "../ui/estilos.js";
+import { useAuth } from "../../contexto/auth.js";
+import { useConsulta } from "../../hooks/useConsulta.js";
+import { contarAvisos } from "../../servicios/reportes.js";
 
 const enlaces = [
   { a: "/app", etiqueta: "Inicio", fin: true },
@@ -52,7 +55,7 @@ function BarraSuperior() {
 }
 
 // Barra inferior: solo en celular.
-function BarraInferior() {
+function BarraInferior({ avisos }) {
   return (
     <nav
       aria-label="Principal"
@@ -80,10 +83,10 @@ function BarraInferior() {
                   />
                   <span className="relative">
                     <Icono className="size-6" />
-                    {aviso && (
+                    {aviso && avisos > 0 && (
                       <span
                         className="absolute -right-1 -top-0.5 size-2.5 rounded-full border-2 border-superficie bg-peligro"
-                        aria-label="Tienes avisos nuevos"
+                        aria-label={`Tienes ${avisos} aviso${avisos === 1 ? "" : "s"} nuevo${avisos === 1 ? "" : "s"}`}
                       />
                     )}
                   </span>
@@ -100,13 +103,18 @@ function BarraInferior() {
 
 // "conPestanas" muestra la barra inferior del celular (Inicio / Mis reportes / Mi perfil).
 function LayoutCiudadano({ conPestanas = false }) {
+  const { uid } = useAuth();
+  const { pathname } = useLocation();
+  // Cuenta los avisos sin leer (se vuelve a consultar al cambiar de pantalla).
+  const { datos: avisos } = useConsulta(() => (uid ? contarAvisos() : Promise.resolve(0)), [uid, pathname]);
+
   return (
     <div className="min-h-dvh bg-fondo text-texto">
       <BarraSuperior />
       <main className={conPestanas ? "pb-20 md:pb-0" : ""}>
         <Outlet />
       </main>
-      {conPestanas && <BarraInferior />}
+      {conPestanas && <BarraInferior avisos={avisos ?? 0} />}
     </div>
   );
 }

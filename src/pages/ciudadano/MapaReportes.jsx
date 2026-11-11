@@ -5,12 +5,14 @@ import FiltrosReportes from "../../components/ui/FiltrosReportes.jsx";
 import TarjetaReporte from "../../components/ui/TarjetaReporte.jsx";
 import InsigniaEstado from "../../components/ui/InsigniaEstado.jsx";
 import IconoTipo from "../../components/ui/IconoTipo.jsx";
-import AvisoEjemplo from "../../components/ui/AvisoEjemplo.jsx";
+import Cargando from "../../components/ui/Cargando.jsx";
+import ErrorCarga from "../../components/ui/ErrorCarga.jsx";
 import BotonTema from "../../components/ui/BotonTema.jsx";
 import MapaEstados from "../../components/mapa/MapaEstados.jsx";
 import { campo, boton } from "../../components/ui/estilos.js";
 import { ESTADOS, ORDEN_ESTADOS, TIPOS } from "../../data/catalogos.js";
-import { COMUNAS, REPORTES } from "../../data/ejemplo.js";
+import { useConsulta } from "../../hooks/useConsulta.js";
+import { etiquetaUbicacion, listarReportes, listarZonas } from "../../servicios/reportes.js";
 
 // Quita tildes y mayúsculas para que "señal" encuentre "Señalización".
 const normalizar = (texto) =>
@@ -44,10 +46,10 @@ function ResumenSeleccionado({ reporte, onCerrar }) {
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-xs font-bold uppercase tracking-wider text-texto-3">
-          Reporte Ref. {reporte.ref}
+          Reporte Ref. {reporte.refCorta}
         </p>
         <p className="font-bold">
-          {TIPOS[reporte.tipo].etiqueta} · Barrio {reporte.barrio}
+          {TIPOS[reporte.tipo].etiqueta} · {etiquetaUbicacion(reporte)}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <InsigniaEstado estado={reporte.estado} conPunto />
@@ -80,20 +82,24 @@ function MapaReportes() {
   const [tipo, setTipo] = useState("todos");
   const [estado, setEstado] = useState("todos");
   const [comuna, setComuna] = useState("todas");
-  const [seleccionado, setSeleccionado] = useState("3f9a1c");
+  const [seleccionado, setSeleccionado] = useState(null);
+
+  const { datos, error, cargando, recargar } = useConsulta(() => listarReportes({ limite: 500 }), ["mapa"]);
+  const { datos: zonas } = useConsulta(() => listarZonas().catch(() => []), ["zonas"]);
+  const reportes = useMemo(() => datos ?? [], [datos]);
 
   // Filtros que no dependen del tipo (sirven para contar en cada chip).
   const baseFiltrada = useMemo(() => {
     const q = normalizar(busqueda.replace("#", "").trim());
-    return REPORTES.filter((r) => {
-      const texto = normalizar(`${TIPOS[r.tipo].etiqueta} ${r.barrio} ${r.comuna} ${r.ref}`);
+    return reportes.filter((r) => {
+      const texto = normalizar(`${TIPOS[r.tipo].etiqueta} ${r.barrio ?? ""} ${r.comuna ?? ""} ${r.ref}`);
       return (
         (q === "" || texto.includes(q)) &&
         (estado === "todos" || r.estado === estado) &&
         (comuna === "todas" || r.comuna === comuna)
       );
     });
-  }, [busqueda, estado, comuna]);
+  }, [reportes, busqueda, estado, comuna]);
 
   const conteos = useMemo(() => {
     const c = { todos: baseFiltrada.length };
@@ -146,6 +152,7 @@ function MapaReportes() {
             className={`${campo} pl-12`}
           />
         </label>
+        {(zonas ?? []).length > 0 && (
         <label className="relative block md:w-56">
           <span className="sr-only">Comuna o corregimiento</span>
           <select
@@ -154,25 +161,28 @@ function MapaReportes() {
             className={`${campo} appearance-none pr-10 font-semibold`}
           >
             <option value="todas">Todas las comunas</option>
-            {COMUNAS.map((c) => (
-              <option key={c} value={c}>
-                {c}
+            {(zonas ?? []).map((z) => (
+              <option key={z.id} value={z.nombre}>
+                {z.nombre}
               </option>
             ))}
           </select>
           <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2" aria-hidden="true" />
         </label>
+        )}
       </div>
 
       <div className="-mx-4 mt-1 md:mx-0 md:mt-3">
         <FiltrosReportes tipo={tipo} estado={estado} onTipo={setTipo} onEstado={setEstado} conteos={conteos} />
       </div>
 
-      <AvisoEjemplo className="mt-2" />
-
-      {visibles.length === 0 ? (
+      {error ? (
+        <ErrorCarga className="mt-4" error={error} onReintentar={recargar} />
+      ) : cargando && !datos ? (
+        <Cargando texto="Cargando reportes" />
+      ) : visibles.length === 0 ? (
         <p className="mt-4 rounded-2xl border border-dashed border-borde-fuerte p-8 text-center text-sm text-texto-2">
-          No encontramos reportes con esos filtros.
+          {reportes.length ? "No encontramos reportes con esos filtros." : "Aún no hay reportes en el mapa."}
         </p>
       ) : vista === "mapa" ? (
         <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_22rem]">

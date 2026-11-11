@@ -1,4 +1,6 @@
-import { NavLink, Outlet, useLocation } from "react-router";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
+import { LogOut } from "lucide-react";
+import { useAuth } from "../../contexto/auth.js";
 import Logo from "../ui/Logo.jsx";
 import BotonTema from "../ui/BotonTema.jsx";
 
@@ -13,6 +15,13 @@ const enlaces = [
 // pero se adaptan al celular).
 function LayoutAdmin() {
   const { pathname } = useLocation();
+  const navegar = useNavigate();
+  const { esAdmin, cerrarSesion } = useAuth();
+
+  const salir = async () => {
+    await cerrarSesion();
+    navegar("/");
+  };
 
   const activo = (enlace) => {
     if (enlace.clave === "reportes") return false;
@@ -46,7 +55,20 @@ function LayoutAdmin() {
               </NavLink>
             ))}
           </nav>
-          <BotonTema className="ml-auto border-white/15! bg-white/10! text-white! hover:bg-white/20! md:ml-0" />
+          <div className="ml-auto flex items-center gap-2 md:ml-0">
+            {esAdmin && (
+              <button
+                type="button"
+                onClick={salir}
+                aria-label="Cerrar sesión"
+                className="flex h-10 cursor-pointer items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 text-sm font-semibold text-white hover:bg-white/20"
+              >
+                <LogOut className="size-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Salir</span>
+              </button>
+            )}
+            <BotonTema className="border-white/15! bg-white/10! text-white! hover:bg-white/20!" />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 md:py-8">

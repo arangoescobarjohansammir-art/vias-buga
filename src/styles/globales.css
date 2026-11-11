@@ -356,3 +356,17 @@ body {
 .sin-barra::-webkit-scrollbar {
   display: none;
 }
+
+/* ---------- Impresión (botón "PDF" de indicadores) ---------- */
+@media print {
+  header,
+  nav,
+  button,
+  .sin-impresion {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+}

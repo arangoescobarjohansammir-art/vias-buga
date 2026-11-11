@@ -1,20 +1,24 @@
 import { ESTADOS, TIPOS } from "./catalogos.js";
 
-const comillas = (valor) => `"${String(valor ?? "").replaceAll('"', '""')}"`;
+// Evita que Excel interprete un texto como fórmula (=, +, -, @) y escapa las comillas.
+const comillas = (valor) => {
+  let texto = String(valor ?? "");
+  if (/^[=+\-@]/.test(texto)) texto = `'${texto}`;
+  return `"${texto.replaceAll('"', '""')}"`;
+};
 
 // Descarga los reportes como CSV (el BOM inicial hace que Excel respete las tildes).
-// Más adelante saldrá de la vista v_reportes_exportacion de la base de datos.
 export function descargarCsv(reportes, nombre = "reportes-viasbuga.csv") {
   const encabezado = ["Ref", "Tipo", "Estado", "Barrio", "Comuna", "Latitud", "Longitud", "Fecha", "Cuadrilla", "Apoyos"];
   const filas = reportes.map((r) => [
     r.ref,
     TIPOS[r.tipo].etiqueta,
     ESTADOS[r.estado].etiqueta,
-    r.barrio,
-    r.comuna,
+    r.barrio ?? "",
+    r.comuna ?? "",
     r.lat,
     r.lng,
-    r.fecha,
+    r.creadoEn?.slice(0, 10) ?? r.fecha,
     r.cuadrilla ?? "Sin asignar",
     r.apoyos,
   ]);

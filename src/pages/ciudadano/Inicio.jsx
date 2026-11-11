@@ -3,24 +3,28 @@ import { Link } from "react-router";
 import { Plus, Search } from "lucide-react";
 import Logo from "../../components/ui/Logo.jsx";
 import BotonTema from "../../components/ui/BotonTema.jsx";
-import AvisoEjemplo from "../../components/ui/AvisoEjemplo.jsx";
+import Cargando from "../../components/ui/Cargando.jsx";
+import ErrorCarga from "../../components/ui/ErrorCarga.jsx";
 import FiltrosReportes from "../../components/ui/FiltrosReportes.jsx";
 import TarjetaReporte from "../../components/ui/TarjetaReporte.jsx";
 import MapaEstados from "../../components/mapa/MapaEstados.jsx";
 import { boton } from "../../components/ui/estilos.js";
-import { REPORTES } from "../../data/ejemplo.js";
+import { useConsulta } from "../../hooks/useConsulta.js";
+import { listarReportes } from "../../servicios/reportes.js";
 
 function Inicio() {
   const [tipo, setTipo] = useState("todos");
   const [estado, setEstado] = useState("todos");
   const [seleccionado, setSeleccionado] = useState(null);
 
+  const { datos, error, cargando, recargar } = useConsulta(() => listarReportes({ limite: 300 }), ["inicio"]);
+
   const visibles = useMemo(
     () =>
-      REPORTES.filter(
+      (datos ?? []).filter(
         (r) => (tipo === "todos" || r.tipo === tipo) && (estado === "todos" || r.estado === estado),
       ),
-    [tipo, estado],
+    [datos, tipo, estado],
   );
 
   return (
@@ -56,11 +60,14 @@ function Inicio() {
             Ver todos
           </Link>
         </div>
-        <AvisoEjemplo className="mb-3" />
 
-        {visibles.length === 0 ? (
+        {error ? (
+          <ErrorCarga error={error} onReintentar={recargar} />
+        ) : cargando && !datos ? (
+          <Cargando texto="Cargando reportes" />
+        ) : visibles.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-borde-fuerte p-6 text-center text-sm text-texto-2">
-            No hay reportes con esos filtros.
+            {datos?.length ? "No hay reportes con esos filtros." : "Aún no hay reportes. ¡Sé la primera persona en reportar un daño!"}
           </p>
         ) : (
           <ul className="flex flex-col gap-3">

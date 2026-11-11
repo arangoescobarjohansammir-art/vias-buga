@@ -55,3 +55,11 @@ export function formatearCoordenadas(lat, lng) {
   const eo = lng >= 0 ? "E" : "O";
   return `${Math.abs(lat).toFixed(4)}° ${ns}, ${Math.abs(lng).toFixed(4)}° ${eo}`;
 }
+
+// Períodos del panel de indicadores. "desde" devuelve la fecha de inicio en formato ISO.
+export const PERIODOS = [
+  { id: "30d", etiqueta: "Últimos 30 días", desde: () => new Date(Date.now() - 30 * 86400000).toISOString() },
+  { id: "90d", etiqueta: "Últimos 90 días", desde: () => new Date(Date.now() - 90 * 86400000).toISOString() },
+  { id: "anio", etiqueta: "Este año", desde: () => new Date(new Date().getFullYear(), 0, 1).toISOString() },
+  { id: "todo", etiqueta: "Todo el historial", desde: () => new Date(2020, 0, 1).toISOString() },
+];

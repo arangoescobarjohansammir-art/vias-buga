@@ -1,4 +1,5 @@
-import { Link } from "react-router";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
 import {
   ArrowRight,
   BadgeCheck,
@@ -13,6 +14,8 @@ import {
 import Logo from "../components/ui/Logo.jsx";
 import BotonTema from "../components/ui/BotonTema.jsx";
 import { boton } from "../components/ui/estilos.js";
+import { useAuth } from "../contexto/auth.js";
+import { mensajeError } from "../servicios/errores.js";
 
 const ventajas = [
   { Icono: Globe2, titulo: "100% independiente", texto: "Datos abiertos y cívicos" },
@@ -61,7 +64,7 @@ function IlustracionCalle() {
         </span>
         <span>
           <span className="block text-sm font-bold text-white">Hueco profundo</span>
-          <span className="block text-xs text-[#a6b4ba]">Cra. 14 con Calle 7</span>
+          <span className="block text-xs text-[#a6b4ba]">Ejemplo ilustrativo</span>
         </span>
       </div>
 
@@ -69,7 +72,7 @@ function IlustracionCalle() {
         <span className="size-2 rounded-full bg-primario" aria-hidden="true" />
         <span>
           <span className="block text-sm font-bold text-white">En revisión ciudadana</span>
-          <span className="block text-xs text-[#a6b4ba]">Hace 12 minutos</span>
+          <span className="block text-xs text-[#a6b4ba]">Así verás el avance de tu reporte</span>
         </span>
       </div>
     </div>
@@ -77,6 +80,24 @@ function IlustracionCalle() {
 }
 
 function Bienvenida() {
+  const navegar = useNavigate();
+  const { cargando, usuario, esAnonimo, asegurarSesion, cerrarSesion } = useAuth();
+  const [entrando, setEntrando] = useState(false);
+  const [error, setError] = useState("");
+
+  // "Continuar como anónimo": crea una sesión anónima (sin pedir datos) y entra a la app.
+  const continuarAnonimo = async () => {
+    setError("");
+    setEntrando(true);
+    try {
+      await asegurarSesion();
+      navegar("/app");
+    } catch (e) {
+      setError(mensajeError(e, "No pudimos iniciar tu sesión. Inténtalo de nuevo."));
+      setEntrando(false);
+    }
+  };
+
   return (
     <div className="fondo-resplandor flex min-h-dvh flex-col bg-fondo text-texto">
       <header className="border-b border-borde/60">
@@ -112,18 +133,38 @@ function Bienvenida() {
           </p>
 
           <div className="mt-8 flex max-w-md flex-col gap-3">
-            <Link to="/registro" className={`${boton.primario} rounded-xl!`}>
-              Crear cuenta
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-            <Link to="/login" className={`${boton.secundario} rounded-xl! bg-superficie-2`}>
-              Iniciar sesión
-            </Link>
-            <Link to="/app" className={`${boton.suave} rounded-xl!`}>
-              <EyeOff className="size-5" aria-hidden="true" />
-              Continuar como anónimo
-            </Link>
+            {!cargando && usuario ? (
+              <>
+                <Link to="/app" className={`${boton.primario} rounded-xl!`}>
+                  Entrar a VíasBuga
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+                <button type="button" onClick={cerrarSesion} className={`${boton.secundario} rounded-xl! bg-superficie-2`}>
+                  {esAnonimo ? "Salir de mi sesión anónima" : "Cerrar sesión"}
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/registro" className={`${boton.primario} rounded-xl!`}>
+                  Crear cuenta
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+                <Link to="/login" className={`${boton.secundario} rounded-xl! bg-superficie-2`}>
+                  Iniciar sesión
+                </Link>
+                <button type="button" onClick={continuarAnonimo} disabled={entrando} className={`${boton.suave} rounded-xl!`}>
+                  <EyeOff className="size-5" aria-hidden="true" />
+                  {entrando ? "Entrando..." : "Continuar como anónimo"}
+                </button>
+              </>
+            )}
           </div>
+
+          {error && (
+            <p role="alert" className="mt-3 max-w-md text-sm font-semibold text-peligro">
+              {error}
+            </p>
+          )}
 
           <p className="mt-4 flex max-w-md items-start gap-2 text-xs leading-snug text-texto-3">
             <Info className="mt-px size-3.5 shrink-0 text-primario" aria-hidden="true" />
@@ -152,7 +193,7 @@ function Bienvenida() {
               Radar de malla vial activo
             </p>
             <span className="rounded-md border border-borde bg-superficie-2 px-2.5 py-1 text-xs font-semibold text-texto-2">
-              Comuna 1 a 8
+              Ilustración
             </span>
           </div>
           <IlustracionCalle />

@@ -1,13 +1,14 @@
 import { Link } from "react-router";
 import { Bell } from "lucide-react";
 import { TIPOS } from "../../data/catalogos.js";
+import { etiquetaUbicacion } from "../../servicios/reportes.js";
 import IconoTipo from "./IconoTipo.jsx";
 import InsigniaEstado from "./InsigniaEstado.jsx";
 
 // Tarjeta de un reporte (listas de Inicio y Mis reportes).
 // "aviso" muestra la franja roja de "¡Tu reporte pasó a ...!".
 function TarjetaReporte({ reporte, aviso, destacado = false }) {
-  const titulo = `${TIPOS[reporte.tipo].etiqueta} · Barrio ${reporte.barrio}`;
+  const titulo = `${TIPOS[reporte.tipo].etiqueta} · ${etiquetaUbicacion(reporte)}`;
 
   return (
     <Link
@@ -29,7 +30,7 @@ function TarjetaReporte({ reporte, aviso, destacado = false }) {
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-bold text-texto">{titulo}</p>
           <p className="truncate text-sm text-texto-2">
-            Ref. {reporte.ref} · {reporte.hace}
+            Ref. {reporte.refCorta} · {reporte.hace}
           </p>
         </div>
         <InsigniaEstado estado={reporte.estado} />

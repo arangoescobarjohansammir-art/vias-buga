@@ -1,5 +1,5 @@
-import { Link, useLocation } from "react-router";
-import { Bell, Check, FileText, Map as IconoMapa } from "lucide-react";
+import { Link, Navigate, useLocation } from "react-router";
+import { AlertTriangle, Bell, Check, FileText, Map as IconoMapa } from "lucide-react";
 import BotonTema from "../../components/ui/BotonTema.jsx";
 import IconoTipo from "../../components/ui/IconoTipo.jsx";
 import InsigniaEstado from "../../components/ui/InsigniaEstado.jsx";
@@ -8,8 +8,9 @@ import { ESTADOS, ORDEN_ESTADOS, TIPOS } from "../../data/catalogos.js";
 
 function ReporteEnviado() {
   const { state } = useLocation();
-  const ref = state?.ref ?? "3f9a1c";
-  const tipo = state?.tipo && TIPOS[state.tipo] ? state.tipo : "hueco";
+  // Esta pantalla solo tiene sentido justo después de enviar un reporte.
+  if (!state?.id || !TIPOS[state.tipo]) return <Navigate to="/app" replace />;
+  const { id, tipo, fotoFallo } = state;
 
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-lg flex-col px-4 pb-10">
@@ -25,10 +26,16 @@ function ReporteEnviado() {
         </span>
         <h1 className="mt-6 text-3xl font-extrabold tracking-tight">¡Reporte enviado con éxito!</h1>
         <p className="mt-2 text-[15px] text-texto-2">Tu reporte quedó registrado como Recibido.</p>
+        {fotoFallo && (
+          <p role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-peligro/40 bg-peligro-suave p-3 text-left text-sm text-texto">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-peligro" aria-hidden="true" />
+            El reporte se guardó, pero no pudimos subir la foto. Puedes crear otro reporte con la foto si la necesitas.
+          </p>
+        )}
 
         <div className="mt-8 w-full rounded-3xl border border-borde bg-superficie p-5 text-left shadow-tarjeta">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-bold text-texto-2">Ref. {ref}</p>
+            <p className="text-sm font-bold text-texto-2">Ref. {id.slice(0, 8)}</p>
             <InsigniaEstado estado="recibido" />
           </div>
           <div className="mt-4 flex items-center gap-4">
@@ -59,7 +66,7 @@ function ReporteEnviado() {
         </div>
 
         <div className="mt-6 flex w-full flex-col gap-3">
-          <Link to={`/app/reporte/${ref}`} className={boton.secundario}>
+          <Link to={`/app/reporte/${id}`} className={boton.secundario}>
             <FileText className="size-5" aria-hidden="true" />
             Ver mi reporte
           </Link>
