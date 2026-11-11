@@ -186,7 +186,7 @@ function MapaReportes() {
         </p>
       ) : vista === "mapa" ? (
         <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_22rem]">
-          <div className="relative h-[55dvh] min-h-80 overflow-hidden rounded-2xl border border-borde lg:h-[34rem]">
+          <div className="relative isolate h-[55dvh] min-h-80 overflow-hidden rounded-2xl border border-borde lg:h-[34rem]">
             <MapaEstados reportes={visibles} seleccionado={seleccionado} onSeleccionar={setSeleccionado} conUbicacion />
             <Leyenda />
           </div>

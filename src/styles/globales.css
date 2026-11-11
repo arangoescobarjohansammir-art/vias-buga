@@ -218,6 +218,10 @@ body {
 /* ---------- Mapa (Leaflet) ---------- */
 /* El componente Mapa.jsx fija 400px de alto en línea; este contenedor lo hace
    responsive sin tocar ese archivo. */
+/* Leaflet usa z-index de hasta 1000: se aísla para que no tape modales ni menús. */
+.mapa-ajustable {
+  isolation: isolate;
+}
 .mapa-ajustable .leaflet-container {
   height: 100% !important;
   width: 100% !important;
