@@ -17,7 +17,7 @@ function AccesoRestringido() {
       <p className="mt-3 text-[15px] leading-relaxed text-texto-2">
         {conCuenta && !esAdmin
           ? "Tu cuenta no tiene rol de administrador. Si crees que es un error, pídele a un administrador que te asigne el rol."
-          : "Esta sección es solo para administradores de VíasBuga. Inicia sesión con tu cuenta y, si tienes rol de administrador, verás el panel."}
+          : "Esta sección es solo para administradores de VíasBuga."}
       </p>
       <div className="mt-6 flex flex-col gap-3">
         {esAdmin ? (
@@ -31,9 +31,9 @@ function AccesoRestringido() {
             </Link>
           )
         )}
-        <Link to="/indicadores" className={boton.secundario}>
+        <Link to="/" className={boton.secundario}>
           <ArrowLeft className="size-4" aria-hidden="true" />
-          Volver a indicadores públicos
+          Volver al inicio
         </Link>
       </div>
     </div>

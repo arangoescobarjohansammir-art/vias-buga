@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../supabaseClient.js";
 import { AuthContexto } from "./auth.js";
+import { obtenerTokenCaptcha } from "../servicios/captcha.js";
 
 async function cargarPerfil(uid) {
   const [perfil, datos] = await Promise.all([
@@ -49,19 +50,26 @@ function AuthProvider({ children }) {
   const asegurarSesion = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
     if (data.session) return data.session.user;
-    const { data: nueva, error } = await supabase.auth.signInAnonymously();
+    const captchaToken = await obtenerTokenCaptcha();
+    const { data: nueva, error } = await supabase.auth.signInAnonymously({ options: { captchaToken } });
     if (error) throw error;
     return nueva.user;
   }, []);
 
   const iniciarSesion = useCallback(async (correo, clave) => {
-    const { error } = await supabase.auth.signInWithPassword({ email: correo.trim(), password: clave });
+    const captchaToken = await obtenerTokenCaptcha();
+    const { error } = await supabase.auth.signInWithPassword({
+      email: correo.trim(),
+      password: clave,
+      options: { captchaToken },
+    });
     if (error) throw error;
   }, []);
 
   // Los datos personales viajan en los metadatos; un trigger de la base de datos los
   // guarda en datos_personales (ver supabase/02_backend_final.sql).
   const registrar = useCallback(async ({ nombre, cedula, correo, telefono, clave }) => {
+    const captchaToken = await obtenerTokenCaptcha();
     const { data, error } = await supabase.auth.signUp({
       email: correo.trim(),
       password: clave,
@@ -73,6 +81,7 @@ function AuthProvider({ children }) {
           autorizo_datos: "true",
         },
         emailRedirectTo: `${window.location.origin}/app`,
+        captchaToken,
       },
     });
     if (error) throw error;
@@ -85,8 +94,10 @@ function AuthProvider({ children }) {
   }, []);
 
   const enviarRecuperacion = useCallback(async (correo) => {
+    const captchaToken = await obtenerTokenCaptcha();
     const { error } = await supabase.auth.resetPasswordForEmail(correo.trim(), {
       redirectTo: `${window.location.origin}/restablecer`,
+      captchaToken,
     });
     if (error) throw error;
   }, []);

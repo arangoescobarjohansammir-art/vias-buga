@@ -66,11 +66,11 @@ function AppRouter() {
             <Route path="reporte/:ref" element={<DetalleReporte />} />
           </Route>
 
-          {/* Indicadores públicos y administración (solo con rol de administrador) */}
+          {/* Indicadores y administración: solo con rol de administrador */}
           <Route element={<LayoutAdmin />}>
-            <Route path="/indicadores" element={<Indicadores />} />
             <Route path="/acceso-restringido" element={<AccesoRestringido />} />
             <Route element={<RutaAdmin />}>
+              <Route path="/indicadores" element={<Indicadores />} />
               <Route path="/admin" element={<GestionReportes />} />
               <Route path="/admin/reporte/:ref" element={<DetalleAdmin />} />
             </Route>

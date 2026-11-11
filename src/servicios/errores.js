@@ -7,6 +7,12 @@ export function mensajeError(error, porDefecto = "Algo salió mal. Inténtalo de
   }
   if (/límite de 10 reportes/i.test(texto)) return texto;
   if (/reportes_dentro_de_buga/.test(texto)) return "Esa ubicación queda fuera de Guadalajara de Buga.";
+  if (/captcha_failed|captcha protection|captcha_token/i.test(texto)) {
+    return "No pudimos verificar que eres una persona. Recarga la página e inténtalo de nuevo.";
+  }
+  if (/captcha_no_carga|captcha_error|captcha_timeout/i.test(texto)) {
+    return "No se pudo cargar la verificación anti-robots. Revisa tu conexión (o bloqueadores) e inténtalo de nuevo.";
+  }
   if (/row-level security|permission denied|jwt expired|not authorized/i.test(texto)) {
     return "No tienes permiso para hacer esto, o tu sesión expiró. Vuelve a iniciar sesión.";
   }
