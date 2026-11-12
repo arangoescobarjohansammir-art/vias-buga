@@ -27,9 +27,38 @@ function cargarScript() {
 
 export const captchaActivo = Boolean(SITE_KEY);
 
-// Cada token sirve para UNA sola operación: se pide uno nuevo en cada intento.
+// Cada token sirve para UNA sola operación (y caduca a los 5 min).
+// Para que el botón no espere a Cloudflare, las pantallas de acceso piden el token por
+// adelantado con precalentarCaptcha() y obtenerTokenCaptcha() lo usa si ya está listo.
+const VIGENCIA_MS = 4 * 60 * 1000;
+let adelantado = null; // { promesa, creado }
+
+export function precalentarCaptcha() {
+  if (!SITE_KEY) return;
+  if (adelantado && Date.now() - adelantado.creado < VIGENCIA_MS) return;
+  const promesa = generarToken();
+  const actual = { promesa, creado: Date.now() };
+  adelantado = actual;
+  promesa.catch(() => {
+    if (adelantado === actual) adelantado = null; // si falló, se pedirá uno nuevo al enviar
+  });
+}
+
 export async function obtenerTokenCaptcha() {
   if (!SITE_KEY) return undefined;
+  if (adelantado && Date.now() - adelantado.creado < VIGENCIA_MS) {
+    const { promesa } = adelantado;
+    adelantado = null; // un token solo se usa una vez
+    try {
+      return await promesa;
+    } catch {
+      /* el token adelantado falló: se pide uno nuevo abajo */
+    }
+  }
+  return generarToken();
+}
+
+async function generarToken() {
   await cargarScript();
 
   return new Promise((resolve, reject) => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { MailCheck } from "lucide-react";
 import PantallaAcceso from "../components/layout/PantallaAcceso.jsx";
@@ -7,6 +7,7 @@ import CampoClave from "../components/ui/CampoClave.jsx";
 import { boton } from "../components/ui/estilos.js";
 import { useAuth } from "../contexto/auth.js";
 import { mensajeError } from "../servicios/errores.js";
+import { precalentarCaptcha } from "../servicios/captcha.js";
 
 function Registro() {
   const navegar = useNavigate();
@@ -14,6 +15,11 @@ function Registro() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
   const [pendienteCorreo, setPendienteCorreo] = useState("");
+
+  // Pide el token anti-robots mientras la persona llena el formulario.
+  useEffect(() => {
+    precalentarCaptcha();
+  }, []);
 
   const enviar = async (e) => {
     e.preventDefault();
@@ -38,6 +44,7 @@ function Registro() {
     } catch (err) {
       setError(mensajeError(err, "No pudimos crear tu cuenta. Inténtalo de nuevo."));
       setEnviando(false);
+      precalentarCaptcha();
     }
   };
 
@@ -47,6 +54,7 @@ function Registro() {
       navegar("/app");
     } catch (err) {
       setError(mensajeError(err, "No pudimos iniciar tu sesión. Inténtalo de nuevo."));
+      precalentarCaptcha();
     }
   };
 

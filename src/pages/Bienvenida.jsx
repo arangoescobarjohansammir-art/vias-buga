@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import {
   ArrowRight,
@@ -16,6 +16,7 @@ import BotonTema from "../components/ui/BotonTema.jsx";
 import { boton } from "../components/ui/estilos.js";
 import { useAuth } from "../contexto/auth.js";
 import { mensajeError } from "../servicios/errores.js";
+import { precalentarCaptcha } from "../servicios/captcha.js";
 
 const ventajas = [
   { Icono: Globe2, titulo: "100% independiente", texto: "Datos abiertos y cívicos" },
@@ -85,6 +86,11 @@ function Bienvenida() {
   const [entrando, setEntrando] = useState(false);
   const [error, setError] = useState("");
 
+  // Si aún no hay sesión, prepara el token anti-robots para que "Continuar como anónimo" sea inmediato.
+  useEffect(() => {
+    if (!cargando && !usuario) precalentarCaptcha();
+  }, [cargando, usuario]);
+
   // "Continuar como anónimo": crea una sesión anónima (sin pedir datos) y entra a la app.
   const continuarAnonimo = async () => {
     setError("");
@@ -95,6 +101,7 @@ function Bienvenida() {
     } catch (e) {
       setError(mensajeError(e, "No pudimos iniciar tu sesión. Inténtalo de nuevo."));
       setEntrando(false);
+      precalentarCaptcha();
     }
   };
 

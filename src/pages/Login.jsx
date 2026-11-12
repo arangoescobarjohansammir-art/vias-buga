@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { ArrowRight } from "lucide-react";
 import PantallaAcceso from "../components/layout/PantallaAcceso.jsx";
@@ -7,6 +7,7 @@ import CampoClave from "../components/ui/CampoClave.jsx";
 import { boton } from "../components/ui/estilos.js";
 import { useAuth } from "../contexto/auth.js";
 import { mensajeError } from "../servicios/errores.js";
+import { precalentarCaptcha } from "../servicios/captcha.js";
 
 // Solo se acepta volver a rutas internas (evita redirecciones a otros sitios).
 function rutaSegura(ruta) {
@@ -23,6 +24,11 @@ function Login() {
   const [error, setError] = useState("");
   const [aviso, setAviso] = useState("");
 
+  // Pide el token anti-robots mientras la persona escribe, para no hacerla esperar al enviar.
+  useEffect(() => {
+    precalentarCaptcha();
+  }, []);
+
   const enviar = async (e) => {
     e.preventDefault();
     setError("");
@@ -34,6 +40,7 @@ function Login() {
     } catch (err) {
       setError(mensajeError(err, "No pudimos iniciar sesión. Inténtalo de nuevo."));
       setEnviando(false);
+      precalentarCaptcha(); // el token anterior ya se usó: prepara otro para el reintento
     }
   };
 
@@ -47,8 +54,10 @@ function Login() {
     try {
       await enviarRecuperacion(correo);
       setAviso("Si ese correo tiene una cuenta, te enviamos un enlace para crear una contraseña nueva.");
+      precalentarCaptcha();
     } catch (err) {
       setError(mensajeError(err, "No pudimos enviar el correo. Inténtalo de nuevo."));
+      precalentarCaptcha();
     }
   };
 
